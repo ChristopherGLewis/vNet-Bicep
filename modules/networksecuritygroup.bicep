@@ -16,6 +16,9 @@
 //       }
 //     }
 //   ]
+// See
+//  https://docs.microsoft.com/en-us/azure/templates/microsoft.network/networksecuritygroups/securityrules?tabs=json#securityrulepropertiesformat-object
+// for more information
 // ------------------------------------------------------------
 param nsgName string
 param secRules array

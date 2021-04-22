@@ -11,6 +11,9 @@
 //        }
 //      }
 //    ]
+// See
+//  https://docs.microsoft.com/en-us/azure/templates/microsoft.network/routetables/routes?tabs=json#routepropertiesformat-object
+// for more information
 // ------------------------------------------------------------
 
 param rtName string

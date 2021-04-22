@@ -165,3 +165,53 @@ PaaS Services etc).  This fundamentally restricts the usability of *any* vNet co
 for CI/CD IaC processes if the code touches the subnets.
 
 See this link: https://docs.microsoft.com/en-us/azure/azure-resource-manager/templates/deployment-modes#incremental-mode for further details.
+
+
+## Bicep Notes
+There are some tricks that are used in the bicep files to work with this.
+
+### Subnet Modules
+
+There are four subnet modules based off of the NSG/RT requirements.  This is required
+because the route/NSG fields will not take a null or '' for the resource id.
+
+``` JSON
+routeTable: {
+      id: ''       <-- Causes errors
+}
+
+-or-
+
+routeTable:  null() <-- Causes errors
+```
+
+This requires four subnet modules (subnet-rt, subnet-nsg, subnet-both and subnet-none).
+
+## RouteTable and NetworkSecurityGroup modules
+There are also modules for the RT's and NSG's that can be used to create blank
+tables or full tables if the appropriate arrays of objects are passed to them.
+
+The details of the object requirements are documented in each file, and are driven
+by the object formats here:
+
+* https://docs.microsoft.com/en-us/azure/templates/microsoft.network/networksecuritygroups/securityrules?tabs=json#securityrulepropertiesformat-object
+
+* https://docs.microsoft.com/en-us/azure/templates/microsoft.network/routetables/routes?tabs=json#routepropertiesformat-object
+
+## Loops
+The main vNet.Bicep file runs a series of loops to build out each type of object.
+
+The vNet loop is pretty simple with name and address.  There is a section that minimally
+defines the subnets for the vnet with address space only.  This prevents the subnets from
+being dropped on re-deployments, but will remove all route tables and NSG tables from
+the subnets.
+
+The secondary rt/nsg/subnet loops use conditionals to determine what type of subnet
+to deploy for the special subnets.  Because ARM evaluates loops before conditionals,
+each of these loops runs through the entire subnetArray and only gets processed for
+the special subnets that require the particular configuration. You should note that the
+names of the loops are fully qualified ("loop-vnet-subnet-index") to ensure uniqueness at the
+resource name level.
+
+All in all this process would be *much* simpler if ARM allowed a null reference for
+a routetable or NSG ID.

@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.3.255.40792",
-      "templateHash": "13591869027622654957"
+      "templateHash": "5201811711848143447"
     }
   },
   "parameters": {
@@ -17,6 +17,20 @@
     }
   },
   "functions": [],
+  "variables": {
+    "subnetRTOnly": [
+      "GatewaySubnet"
+    ],
+    "subnetNone": [
+      "AzureBastionSubnet",
+      "AzureFirewallSubnet"
+    ],
+    "specialSubnet": [
+      "GatewaySubnet",
+      "AzureBastionSubnet",
+      "AzureFirewallSubnet"
+    ]
+  },
   "resources": [
     {
       "copy": {
@@ -31,11 +45,11 @@
         "copy": [
           {
             "name": "subnets",
-            "count": "[length(parameters('vNetArray')[copyIndex()].SubNetArray)]",
+            "count": "[length(parameters('vNetArray')[copyIndex()].subnets)]",
             "input": {
-              "name": "[parameters('vNetArray')[copyIndex()].SubNetArray[copyIndex('subnets')].SubnetName]",
+              "name": "[parameters('vNetArray')[copyIndex()].subnets[copyIndex('subnets')].SubnetName]",
               "properties": {
-                "addressPrefix": "[parameters('vNetArray')[copyIndex()].SubNetArray[copyIndex('subnets')].SubnetAddressSpace]"
+                "addressPrefix": "[parameters('vNetArray')[copyIndex()].subnets[copyIndex('subnets')].SubnetAddressSpace]"
               }
             }
           }
@@ -49,7 +63,7 @@
       }
     },
     {
-      "condition": "[equals(parameters('subnetArray')[copyIndex()].subnetName, 'GatewaySubnet')]",
+      "condition": "[contains(variables('subnetRTOnly'), parameters('subnetArray')[copyIndex()].subnetName)]",
       "copy": {
         "name": "GWRouteTable",
         "count": "[length(parameters('subnetArray'))]",
@@ -121,7 +135,7 @@
       }
     },
     {
-      "condition": "[equals(parameters('subnetArray')[copyIndex()].subnetName, 'GatewaySubnet')]",
+      "condition": "[contains(variables('subnetRTOnly'), parameters('subnetArray')[copyIndex()].subnetName)]",
       "copy": {
         "name": "GWsubnet",
         "count": "[length(parameters('subnetArray'))]"
@@ -198,7 +212,7 @@
       ]
     },
     {
-      "condition": "[or(equals(parameters('subnetArray')[copyIndex()].subnetName, 'AzureBastionSubnet'), equals(parameters('subnetArray')[copyIndex()].subnetName, 'AzureFirewallSubnet'))]",
+      "condition": "[contains(variables('subnetNone'), parameters('subnetArray')[copyIndex()].subnetName)]",
       "copy": {
         "name": "BstFwSubnets",
         "count": "[length(parameters('subnetArray'))]",
@@ -277,7 +291,7 @@
       ]
     },
     {
-      "condition": "[and(and(not(equals(parameters('subnetArray')[copyIndex()].subnetName, 'GatewaySubnet')), not(equals(parameters('subnetArray')[copyIndex()].subnetName, 'AzureBastionSubnet'))), not(equals(parameters('subnetArray')[copyIndex()].subnetName, 'AzureFirewallSubnet')))]",
+      "condition": "[not(contains(variables('specialSubnet'), parameters('subnetArray')[copyIndex()].subnetName))]",
       "copy": {
         "name": "OtherRouteTable",
         "count": "[length(parameters('subnetArray'))]"
@@ -347,7 +361,7 @@
       }
     },
     {
-      "condition": "[and(and(not(equals(parameters('subnetArray')[copyIndex()].subnetName, 'GatewaySubnet')), not(equals(parameters('subnetArray')[copyIndex()].subnetName, 'AzureBastionSubnet'))), not(equals(parameters('subnetArray')[copyIndex()].subnetName, 'AzureFirewallSubnet')))]",
+      "condition": "[not(contains(variables('specialSubnet'), parameters('subnetArray')[copyIndex()].subnetName))]",
       "copy": {
         "name": "OtherNSGTable",
         "count": "[length(parameters('subnetArray'))]"
@@ -408,7 +422,7 @@
       }
     },
     {
-      "condition": "[and(and(not(equals(parameters('subnetArray')[copyIndex()].subnetName, 'GatewaySubnet')), not(equals(parameters('subnetArray')[copyIndex()].subnetName, 'AzureBastionSubnet'))), not(equals(parameters('subnetArray')[copyIndex()].subnetName, 'AzureFirewallSubnet')))]",
+      "condition": "[not(contains(variables('specialSubnet'), parameters('subnetArray')[copyIndex()].subnetName))]",
       "copy": {
         "name": "OtherSubnets",
         "count": "[length(parameters('subnetArray'))]",

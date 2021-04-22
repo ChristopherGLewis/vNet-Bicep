@@ -38,11 +38,25 @@ resource vnet 'Microsoft.Network/virtualNetworks@2020-06-01' = [for (vnet, i) in
   }
 }]
 
+//Special Subnets
+var subnetRTOnly = [
+  'GatewaySubnet'
+]
+var subnetNone = [
+  'AzureBastionSubnet'
+  'AzureFirewallSubnet'
+]
+var specialSubnet = [
+  'GatewaySubnet'
+  'AzureBastionSubnet'
+  'AzureFirewallSubnet'
+]
+
 //Now create the other subnet information
 
-//GW can have an RT.
+//GatewaySubnet needs a Route Table
 @batchSize(1)
-module GWRouteTable 'modules/routetable.bicep' = [for (subnet, i) in subnetArray: if (subnet.subnetName == 'GatewaySubnet') {
+module GWRouteTable 'modules/routetable.bicep' = [for (subnet, i) in subnetArray: if (contains(subnetRTOnly, subnet.subnetName)) {
   name: 'GWRouteTable-${subnet.vNetName}-${subnet.subnetName}-rt-${i}'
   scope: resourceGroup()
   params: {
@@ -51,7 +65,7 @@ module GWRouteTable 'modules/routetable.bicep' = [for (subnet, i) in subnetArray
     routes: subnet.routes
   }
 }]
-module GWsubnet 'modules/subnet-none.bicep' = [for (subnet, i) in subnetArray: if (subnet.subnetName == 'GatewaySubnet') {
+module GWsubnet 'modules/subnet-rt.bicep' = [for (subnet, i) in subnetArray: if (contains(subnetRTOnly, subnet.subnetName)) {
   name: 'GWsubnet-${subnet.vNetName}-${subnet.subnetName}-${i}'
   params: {
     rgVnet: resourceGroup().name
@@ -67,7 +81,7 @@ module GWsubnet 'modules/subnet-none.bicep' = [for (subnet, i) in subnetArray: i
 
 //Bastion & Firewall - this assumes no NSG for bastion
 @batchSize(1)
-module BstFwSubnets 'modules/subnet-none.bicep' = [for (subnet, i) in subnetArray: if (subnet.subnetName == 'AzureBastionSubnet' || subnet.subnetName == 'AzureFirewallSubnet') {
+module BstFwSubnets 'modules/subnet-none.bicep' = [for (subnet, i) in subnetArray: if (contains(subnetNone, subnet.subnetName)) {
   name: 'BstFwSubnets-${subnet.vNetName}-${subnet.subnetName}-${i}'
   params: {
     rgVnet: resourceGroup().name
@@ -82,7 +96,7 @@ module BstFwSubnets 'modules/subnet-none.bicep' = [for (subnet, i) in subnetArra
 }]
 
 //All others are both RT and NSG.  Note has to be serialized because of vNet update locks
-module OtherRouteTable 'modules/routetable.bicep' = [for (subnet, i) in subnetArray: if ((subnet.subnetName != 'GatewaySubnet') && (subnet.subnetName != 'AzureBastionSubnet') && (subnet.subnetName != 'AzureFirewallSubnet')) {
+module OtherRouteTable 'modules/routetable.bicep' = [for (subnet, i) in subnetArray: if (!contains(specialSubnet, subnet.subnetName)) {
   name: 'OtherRouteTable-${subnet.vNetName}-${subnet.subnetName}-rt-${i}'
   scope: resourceGroup()
   params: {
@@ -91,7 +105,7 @@ module OtherRouteTable 'modules/routetable.bicep' = [for (subnet, i) in subnetAr
     routes: subnet.routes
   }
 }]
-module OtherNSGTable 'modules/networksecuritygroup.bicep' = [for (subnet, i) in subnetArray: if ((subnet.subnetName != 'GatewaySubnet') && (subnet.subnetName != 'AzureBastionSubnet') && (subnet.subnetName != 'AzureFirewallSubnet')) {
+module OtherNSGTable 'modules/networksecuritygroup.bicep' = [for (subnet, i) in subnetArray: if (!contains(specialSubnet, subnet.subnetName)) {
   name: 'OtherNSGTable-${subnet.vNetName}-${subnet.subnetName}-nsg-${i}'
   scope: resourceGroup()
   params: {
@@ -100,7 +114,7 @@ module OtherNSGTable 'modules/networksecuritygroup.bicep' = [for (subnet, i) in 
   }
 }]
 @batchSize(1)
-module OtherSubnets 'modules/subnet-both.bicep' = [for (subnet, i) in subnetArray: if ((subnet.subnetName != 'GatewaySubnet') && (subnet.subnetName != 'AzureBastionSubnet') && (subnet.subnetName != 'AzureFirewallSubnet')) {
+module OtherSubnets 'modules/subnet-both.bicep' = [for (subnet, i) in subnetArray: if (!contains(specialSubnet, subnet.subnetName)) {
   name: 'OtherSubnets-${subnet.vNetName}-${subnet.subnetName}-${i}'
   params: {
     rgVnet: resourceGroup().name
