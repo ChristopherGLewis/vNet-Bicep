@@ -1,0 +1,498 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.3.255.40792",
+      "templateHash": "13591869027622654957"
+    }
+  },
+  "parameters": {
+    "vNetArray": {
+      "type": "array"
+    },
+    "subnetArray": {
+      "type": "array"
+    }
+  },
+  "functions": [],
+  "resources": [
+    {
+      "copy": {
+        "name": "vnet",
+        "count": "[length(parameters('vNetArray'))]"
+      },
+      "type": "Microsoft.Network/virtualNetworks",
+      "apiVersion": "2020-06-01",
+      "name": "[parameters('vNetArray')[copyIndex()].vnetName]",
+      "location": "[resourceGroup().location]",
+      "properties": {
+        "copy": [
+          {
+            "name": "subnets",
+            "count": "[length(parameters('vNetArray')[copyIndex()].SubNetArray)]",
+            "input": {
+              "name": "[parameters('vNetArray')[copyIndex()].SubNetArray[copyIndex('subnets')].SubnetName]",
+              "properties": {
+                "addressPrefix": "[parameters('vNetArray')[copyIndex()].SubNetArray[copyIndex('subnets')].SubnetAddressSpace]"
+              }
+            }
+          }
+        ],
+        "addressSpace": {
+          "addressPrefixes": [
+            "[parameters('vNetArray')[copyIndex()].vNetAddressSpace]"
+          ]
+        },
+        "enableDdosProtection": false
+      }
+    },
+    {
+      "condition": "[equals(parameters('subnetArray')[copyIndex()].subnetName, 'GatewaySubnet')]",
+      "copy": {
+        "name": "GWRouteTable",
+        "count": "[length(parameters('subnetArray'))]",
+        "mode": "serial",
+        "batchSize": 1
+      },
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2019-10-01",
+      "name": "[format('GWRouteTable-{0}-{1}-rt-{2}', parameters('subnetArray')[copyIndex()].vNetName, parameters('subnetArray')[copyIndex()].subnetName, copyIndex())]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "rtName": {
+            "value": "[format('{0}-{1}-rt', parameters('subnetArray')[copyIndex()].vNetName, parameters('subnetArray')[copyIndex()].subnetName)]"
+          },
+          "disableBGPProp": {
+            "value": true
+          },
+          "routes": {
+            "value": "[parameters('subnetArray')[copyIndex()].routes]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.3.255.40792",
+              "templateHash": "15459214960718130116"
+            }
+          },
+          "parameters": {
+            "rtName": {
+              "type": "string"
+            },
+            "disableBGPProp": {
+              "type": "bool",
+              "defaultValue": false
+            },
+            "routes": {
+              "type": "array",
+              "defaultValue": []
+            }
+          },
+          "functions": [],
+          "resources": [
+            {
+              "type": "Microsoft.Network/routeTables",
+              "apiVersion": "2020-06-01",
+              "name": "[parameters('rtName')]",
+              "location": "[resourceGroup().location]",
+              "properties": {
+                "disableBgpRoutePropagation": "[parameters('disableBGPProp')]",
+                "routes": "[parameters('routes')]"
+              }
+            }
+          ],
+          "outputs": {
+            "id": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.Network/routeTables', parameters('rtName'))]"
+            }
+          }
+        }
+      }
+    },
+    {
+      "condition": "[equals(parameters('subnetArray')[copyIndex()].subnetName, 'GatewaySubnet')]",
+      "copy": {
+        "name": "GWsubnet",
+        "count": "[length(parameters('subnetArray'))]"
+      },
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2019-10-01",
+      "name": "[format('GWsubnet-{0}-{1}-{2}', parameters('subnetArray')[copyIndex()].vNetName, parameters('subnetArray')[copyIndex()].subnetName, copyIndex())]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "rgVnet": {
+            "value": "[resourceGroup().name]"
+          },
+          "vNetName": {
+            "value": "[parameters('subnetArray')[copyIndex()].vNetName]"
+          },
+          "subnetName": {
+            "value": "[parameters('subnetArray')[copyIndex()].subnetName]"
+          },
+          "subnetAddressPrefix": {
+            "value": "[parameters('subnetArray')[copyIndex()].SubnetAddressSpace]"
+          },
+          "serviceEndPoints": {
+            "value": "[parameters('subnetArray')[copyIndex()].serviceEndPoints]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.3.255.40792",
+              "templateHash": "15614468064987608457"
+            }
+          },
+          "parameters": {
+            "vNetName": {
+              "type": "string"
+            },
+            "rgVnet": {
+              "type": "string"
+            },
+            "subnetName": {
+              "type": "string"
+            },
+            "subnetAddressPrefix": {
+              "type": "string"
+            },
+            "serviceEndPoints": {
+              "type": "array",
+              "defaultValue": []
+            }
+          },
+          "functions": [],
+          "resources": [
+            {
+              "type": "Microsoft.Network/virtualNetworks/subnets",
+              "apiVersion": "2020-06-01",
+              "name": "[format('{0}/{1}', parameters('vNetName'), parameters('subnetName'))]",
+              "properties": {
+                "addressPrefix": "[parameters('subnetAddressPrefix')]",
+                "serviceEndpoints": "[parameters('serviceEndPoints')]"
+              }
+            }
+          ]
+        }
+      },
+      "dependsOn": [
+        "GWRouteTable"
+      ]
+    },
+    {
+      "condition": "[or(equals(parameters('subnetArray')[copyIndex()].subnetName, 'AzureBastionSubnet'), equals(parameters('subnetArray')[copyIndex()].subnetName, 'AzureFirewallSubnet'))]",
+      "copy": {
+        "name": "BstFwSubnets",
+        "count": "[length(parameters('subnetArray'))]",
+        "mode": "serial",
+        "batchSize": 1
+      },
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2019-10-01",
+      "name": "[format('BstFwSubnets-{0}-{1}-{2}', parameters('subnetArray')[copyIndex()].vNetName, parameters('subnetArray')[copyIndex()].subnetName, copyIndex())]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "rgVnet": {
+            "value": "[resourceGroup().name]"
+          },
+          "vNetName": {
+            "value": "[parameters('subnetArray')[copyIndex()].vNetName]"
+          },
+          "subnetName": {
+            "value": "[parameters('subnetArray')[copyIndex()].subnetName]"
+          },
+          "subnetAddressPrefix": {
+            "value": "[parameters('subnetArray')[copyIndex()].SubnetAddressSpace]"
+          },
+          "serviceEndPoints": {
+            "value": "[parameters('subnetArray')[copyIndex()].serviceEndPoints]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.3.255.40792",
+              "templateHash": "15614468064987608457"
+            }
+          },
+          "parameters": {
+            "vNetName": {
+              "type": "string"
+            },
+            "rgVnet": {
+              "type": "string"
+            },
+            "subnetName": {
+              "type": "string"
+            },
+            "subnetAddressPrefix": {
+              "type": "string"
+            },
+            "serviceEndPoints": {
+              "type": "array",
+              "defaultValue": []
+            }
+          },
+          "functions": [],
+          "resources": [
+            {
+              "type": "Microsoft.Network/virtualNetworks/subnets",
+              "apiVersion": "2020-06-01",
+              "name": "[format('{0}/{1}', parameters('vNetName'), parameters('subnetName'))]",
+              "properties": {
+                "addressPrefix": "[parameters('subnetAddressPrefix')]",
+                "serviceEndpoints": "[parameters('serviceEndPoints')]"
+              }
+            }
+          ]
+        }
+      },
+      "dependsOn": [
+        "GWsubnet"
+      ]
+    },
+    {
+      "condition": "[and(and(not(equals(parameters('subnetArray')[copyIndex()].subnetName, 'GatewaySubnet')), not(equals(parameters('subnetArray')[copyIndex()].subnetName, 'AzureBastionSubnet'))), not(equals(parameters('subnetArray')[copyIndex()].subnetName, 'AzureFirewallSubnet')))]",
+      "copy": {
+        "name": "OtherRouteTable",
+        "count": "[length(parameters('subnetArray'))]"
+      },
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2019-10-01",
+      "name": "[format('OtherRouteTable-{0}-{1}-rt-{2}', parameters('subnetArray')[copyIndex()].vNetName, parameters('subnetArray')[copyIndex()].subnetName, copyIndex())]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "rtName": {
+            "value": "[format('{0}-{1}-rt', parameters('subnetArray')[copyIndex()].vNetName, parameters('subnetArray')[copyIndex()].subnetName)]"
+          },
+          "disableBGPProp": {
+            "value": true
+          },
+          "routes": {
+            "value": "[parameters('subnetArray')[copyIndex()].routes]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.3.255.40792",
+              "templateHash": "15459214960718130116"
+            }
+          },
+          "parameters": {
+            "rtName": {
+              "type": "string"
+            },
+            "disableBGPProp": {
+              "type": "bool",
+              "defaultValue": false
+            },
+            "routes": {
+              "type": "array",
+              "defaultValue": []
+            }
+          },
+          "functions": [],
+          "resources": [
+            {
+              "type": "Microsoft.Network/routeTables",
+              "apiVersion": "2020-06-01",
+              "name": "[parameters('rtName')]",
+              "location": "[resourceGroup().location]",
+              "properties": {
+                "disableBgpRoutePropagation": "[parameters('disableBGPProp')]",
+                "routes": "[parameters('routes')]"
+              }
+            }
+          ],
+          "outputs": {
+            "id": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.Network/routeTables', parameters('rtName'))]"
+            }
+          }
+        }
+      }
+    },
+    {
+      "condition": "[and(and(not(equals(parameters('subnetArray')[copyIndex()].subnetName, 'GatewaySubnet')), not(equals(parameters('subnetArray')[copyIndex()].subnetName, 'AzureBastionSubnet'))), not(equals(parameters('subnetArray')[copyIndex()].subnetName, 'AzureFirewallSubnet')))]",
+      "copy": {
+        "name": "OtherNSGTable",
+        "count": "[length(parameters('subnetArray'))]"
+      },
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2019-10-01",
+      "name": "[format('OtherNSGTable-{0}-{1}-nsg-{2}', parameters('subnetArray')[copyIndex()].vNetName, parameters('subnetArray')[copyIndex()].subnetName, copyIndex())]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "nsgName": {
+            "value": "[format('{0}-{1}-nsg', parameters('subnetArray')[copyIndex()].vNetName, parameters('subnetArray')[copyIndex()].subnetName)]"
+          },
+          "secRules": {
+            "value": "[parameters('subnetArray')[copyIndex()].securityRules]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.3.255.40792",
+              "templateHash": "12361652170086291069"
+            }
+          },
+          "parameters": {
+            "nsgName": {
+              "type": "string"
+            },
+            "secRules": {
+              "type": "array"
+            }
+          },
+          "functions": [],
+          "resources": [
+            {
+              "type": "Microsoft.Network/networkSecurityGroups",
+              "apiVersion": "2020-06-01",
+              "name": "[parameters('nsgName')]",
+              "location": "[resourceGroup().location]",
+              "properties": {
+                "securityRules": "[parameters('secRules')]"
+              }
+            }
+          ],
+          "outputs": {
+            "id": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.Network/networkSecurityGroups', parameters('nsgName'))]"
+            }
+          }
+        }
+      }
+    },
+    {
+      "condition": "[and(and(not(equals(parameters('subnetArray')[copyIndex()].subnetName, 'GatewaySubnet')), not(equals(parameters('subnetArray')[copyIndex()].subnetName, 'AzureBastionSubnet'))), not(equals(parameters('subnetArray')[copyIndex()].subnetName, 'AzureFirewallSubnet')))]",
+      "copy": {
+        "name": "OtherSubnets",
+        "count": "[length(parameters('subnetArray'))]",
+        "mode": "serial",
+        "batchSize": 1
+      },
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2019-10-01",
+      "name": "[format('OtherSubnets-{0}-{1}-{2}', parameters('subnetArray')[copyIndex()].vNetName, parameters('subnetArray')[copyIndex()].subnetName, copyIndex())]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "rgVnet": {
+            "value": "[resourceGroup().name]"
+          },
+          "vNetName": {
+            "value": "[parameters('subnetArray')[copyIndex()].vNetName]"
+          },
+          "subnetName": {
+            "value": "[parameters('subnetArray')[copyIndex()].subnetName]"
+          },
+          "subnetAddressPrefix": {
+            "value": "[parameters('subnetArray')[copyIndex()].SubnetAddressSpace]"
+          },
+          "serviceEndPoints": {
+            "value": "[parameters('subnetArray')[copyIndex()].serviceEndPoints]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.3.255.40792",
+              "templateHash": "4563137487381561495"
+            }
+          },
+          "parameters": {
+            "vNetName": {
+              "type": "string"
+            },
+            "rgVnet": {
+              "type": "string"
+            },
+            "subnetName": {
+              "type": "string"
+            },
+            "subnetAddressPrefix": {
+              "type": "string"
+            },
+            "serviceEndPoints": {
+              "type": "array",
+              "defaultValue": []
+            }
+          },
+          "functions": [],
+          "resources": [
+            {
+              "type": "Microsoft.Network/virtualNetworks/subnets",
+              "apiVersion": "2020-06-01",
+              "name": "[format('{0}/{1}', parameters('vNetName'), parameters('subnetName'))]",
+              "properties": {
+                "addressPrefix": "[parameters('subnetAddressPrefix')]",
+                "serviceEndpoints": "[parameters('serviceEndPoints')]",
+                "networkSecurityGroup": {
+                  "id": "[resourceId('Microsoft.Networking/networkSecurityGroups', format('{0}-{1}-nsg', parameters('vNetName'), parameters('subnetName')))]"
+                },
+                "routeTable": {
+                  "id": "[resourceId('Microsoft.Networking/routeTables', format('{0}-{1}-rt', parameters('vNetName'), parameters('subnetName')))]"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "dependsOn": [
+        "BstFwSubnets",
+        "OtherNSGTable",
+        "OtherRouteTable"
+      ]
+    }
+  ]
+}

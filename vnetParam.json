@@ -1,0 +1,85 @@
+{
+    "vNetArray": [
+        {
+            "vNetName": "vnet00",
+            "vNetRG": "rgNetworking",
+            "vNetLocation": "centralUs",
+            "NetworkType": "Hub",
+            "vNetAddressSpace": "10.200.0.0/24",
+            "subnets": [
+                {
+                    "vNetName": "vnet00",
+                    "subnetName": "GatewaySubnet",
+                    "SubnetAddressSpace": "10.200.0.0/27",
+                    "serviceEndpoints": [],
+                    "securityRules": [],
+                    "routes": []
+                },
+                {
+                    "vNetName": "vnet00",
+                    "subnetName": "AzureBastionSubnet",
+                    "SubnetAddressSpace": "10.200.0.32/27",
+                    "serviceEndpoints": [],
+                    "securityRules": [],
+                    "routes": []
+                },
+                {
+                    "vNetName": "vnet00",
+                    "subnetName": "AzureFirewallSubnet",
+                    "SubnetAddressSpace": "10.200.0.64/26",
+                    "serviceEndpoints": [],
+                    "securityRules": [],
+                    "routes": []
+                },
+                {
+                    "vNetName": "vnet00",
+                    "subnetName": "Management",
+                    "SubnetAddressSpace": "10.200.0.128/25",
+                    "serviceEndpoints": [],
+                    "securityRules": [],
+                    "routes": []
+                }
+            ]
+        },
+        {
+            "vNetName": "vnet01",
+            "vNetLocation": "centralUs",
+            "NetworkType": "Spoke",
+            "vNetAddressSpace": "10.200.1.0/24",
+            "subnets": [
+                {
+                    "vNetName": "vnet01",
+                    "subnetName": "webtier",
+                    "SubnetAddressSpace": "10.200.1.0/26",
+                    "serviceEndpoints": [],
+                    "securityRules": [],
+                    "routes": []
+                },
+                {
+                    "vNetName": "vnet01",
+                    "subnetName": "apptier",
+                    "SubnetAddressSpace": "10.200.1.64/26",
+                    "serviceEndpoints": [],
+                    "securityRules": [],
+                    "routes": []
+                },
+                {
+                    "vNetName": "vnet01",
+                    "subnetName": "sqltier",
+                    "SubnetAddressSpace": "10.200.1.128/26",
+                    "serviceEndpoints": [],
+                    "securityRules": [],
+                    "routes": []
+                },
+                {
+                    "vNetName": "vnet01",
+                    "subnetName": "adtier",
+                    "SubnetAddressSpace": "10.200.1.192/26",
+                    "serviceEndpoints": [],
+                    "securityRules": [],
+                    "routes": []
+                }
+            ]
+        }
+    ]
+}
