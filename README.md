@@ -164,7 +164,7 @@ subnets.  The base vnet can grow and shrink as long as none of the subnets are
 out of the new range.  Subnets can be resized within the vNet, but can't cause
 overlaps and cannot be resized if they have any resources attached to them (NICs,
 PaaS Services etc).  This fundamentally restricts the usability of *any* vNet code
-for CI/CD IaC processes if their is an address space change needed to a subnet
+for CI/CD IaC processes if there is an address space change needed to a subnet
 that has attached objects.
 
 See this link: https://docs.microsoft.com/en-us/azure/azure-resource-manager/templates/deployment-modes#incremental-mode for further details.

@@ -2,6 +2,9 @@
 [CmdletBinding()]
 Param(
   [Parameter(Mandatory = $false)]
+  [string] $ARMTemplate = 'vNet.json',
+
+  [Parameter(Mandatory = $false)]
   [switch] $ValidateOnly,
 
   [Parameter(Mandatory = $false)]
@@ -38,8 +41,6 @@ $ScriptName = $MyInvocation.MyCommand.Name
 $ScriptStartTime = Get-Date
 Write-Host "Running '$ScriptName' Script starting at $($ScriptStartTime.ToString("yyyy-MM-dd HH:mm:ss zzz"))" -ForegroundColor Green
 
-
-
 $RGName = 'BicepTesting'
 $AzRegion = 'Central US'
 $vnetParamFile = Join-Path -Path $PSScriptRoot -ChildPath "vnetParam.json"
@@ -48,14 +49,33 @@ Write-Host "  Loading vnetParam.json '$vnetParamFile'" -ForegroundColor Green
 $vnetObject = Get-Content $vnetParamFile |  ConvertFrom-Json
 
 $vnetArray = $vnetObject.vNetArray
+# we have to get all subnets in a separate array since Bicep/ARM has minimal array filtering
+# This would be eliminated with a where clause.  Not sure if INTERSECTION would work???
 $subnetArray = $vnetArray.subnets
 
 #Parameter hash - note that New-AzResourceGroupDeployment doesn't seem to support
 #hash tables with complex objects, so write this to a temp ARMTemplate Parameter File
-$Parameters = @{
-  vNetArray   = $vNetArray
-  subnetArray = $subnetArray
+if ( $ARMTemplate.contains('vnet2', [System.StringComparison]::CurrentCultureIgnoreCase ) ) {
+  $Tags = @{
+    'Environment' = 'prop'
+    'Location'    = 'usce'
+    'application' = 'Network'
+    'ALL_CAPS'    = 'ALL_CAPS'
+    'all_lower'   = 'all_lower'
+    'Mixed_Case'  = 'Mixed_Case'
+  }
+  $Parameters = @{
+    vNetArray   = $vNetArray
+    subnetArray = $subnetArray
+    tags        = $tags
+  }
+} else {
+  $Parameters = @{
+    vNetArray   = $vNetArray
+    subnetArray = $subnetArray
+  }
 }
+
 #Dump Parameters
 Write-Host "-- Parameters --" -ForegroundColor Green
 $Parameters
@@ -68,9 +88,7 @@ $ARMParam = Convert-ParamHashToARMParamJson -hash $Parameters
 Write-Host "  Temp parameters file: '$($tempFile)'" -ForegroundColor Green
 $ARMParam | Set-Content -Path $tempFile
 
-
-$vnetARM = Join-Path -Path $PSScriptRoot -ChildPath "vnet.json"
-
+$vnetARM = Join-Path -Path $PSScriptRoot -ChildPath $ARMTemplate
 
 if ($ValidateOnly) {
   Test-AzResourceGroupDeployment  -ResourceGroupName $RGName  -TemplateFile $vnetARM -TemplateParameterFile $tempFile -Verbose

@@ -20,6 +20,8 @@ param rtName string
 param disableBGPProp bool = false
 param routes array = []  //empty
 
+param tags object = {}
+
 //param azFwlIp string
 
 resource routetable 'Microsoft.Network/routeTables@2020-06-01' = {
@@ -29,6 +31,7 @@ resource routetable 'Microsoft.Network/routeTables@2020-06-01' = {
     disableBgpRoutePropagation: disableBGPProp
     routes: routes
   }
+  tags: tags
 }
 
 output id string = routetable.id

@@ -29,7 +29,16 @@
                     "SubnetAddressSpace": "10.200.0.64/26",
                     "serviceEndpoints": [],
                     "securityRules": [],
-                    "routes": []
+                    "routes": [
+                        {
+                            "name": "Default-AzureFirewallSubnet-Route",
+                            "properties": {
+                                "nextHopType": "Internet",
+                                "addressPrefix": "0.0.0.0/0",
+                                "nextHopIpAddress": ""
+                            }
+                        }
+                    ]
                 },
                 {
                     "vNetName": "vnet00",
